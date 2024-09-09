@@ -1,4 +1,4 @@
-**S&R Mod Menu created by Shockeh from S&R Servers**
+# S&R Mods Menu for H2M
 
 This project implements a customizable in-game mod menu for players
 for H2M, providing various functions and configurations. The menu allows 
@@ -19,4 +19,4 @@ Github: https://github.com/simonediberardino
 
 The following is the implementation for S&R Servers:
 
-![alt text](https://i.postimg.cc/KjMXK9WF/IMG-20240903-WA0000.jpg)
+![alt text](https://i.postimg.cc/K8g5d6Mm/IMG-20240903-WA0000.jpg)
