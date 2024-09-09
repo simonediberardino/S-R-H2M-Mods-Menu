@@ -19,4 +19,4 @@ Github: https://github.com/simonediberardino
 
 The following is the implementation for S&R Servers:
 
-![alt text]([http://url/to/img.png](https://i.postimg.cc/KjMXK9WF/IMG-20240903-WA0000.jpg))
+![alt text](https://i.postimg.cc/KjMXK9WF/IMG-20240903-WA0000.jpg)
