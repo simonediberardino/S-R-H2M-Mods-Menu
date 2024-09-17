@@ -107,36 +107,48 @@ setDvarIfNotInit(dvarName, value) {
 CreatePlayerMenu() {
     // Add buttons to the main page with titles and corresponding actions.
     addButton("main", "Page 1", ::goToPage1);
-    addButton("main", "Page 2", ::goToPage2);
-    addButton("main", "", ::goToPage3, ::buttonDynamicText);
-    addButton("main", "^3[{+attack}] ^7 - ^3[{+speed_throw}] ^7 - ^3[{+gostand}]");
+    addButton("main", "Credits", ::goToCreditsMenu);
+    addText("main", "^3[{+attack}] ^7 - ^3[{+speed_throw}] ^7 - ^3[{+gostand}]");
+
+    addText("credits", "S&R Mods menu was developed");
+    addText("credits", "by Shockeh at S&R Servers.");
+    addText("credits", "More about us: SnRServers.com/about");
+    addButton("credits", "^1Back", ::goToMain);
 
     // Add buttons to the first page with test functions and a back option.
     addButton("page1", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
     addButton("page1", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
-    addButton("page1", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
+    addText("page1", "Test text");
     addButton("page1", "^1Back", ::goToMain);
+}
 
-    // Add buttons to the second page with test functions and a back option.
-    addButton("page2", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
-    addButton("page2", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
-    addButton("page2", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
-    addButton("page2", "^1Back", ::goToMain);
-
-    // Add buttons to the third page with test functions and a back option.
-    addButton("page3", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
-    addButton("page3", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
-    addButton("page3", "Test function", user_scripts\mp\snr_menu_functions\snr_menu_functions::testMenuFunction);
-    addButton("page3", "^1Back", ::goToMain);
+goToCreditsMenu() {
+    switchPage("credits");
 }
 
 goToMain() {switchPage("main");}
 goToPage1() { switchPage("page1");}
 goToPage2() { switchPage("page2");}
 goToPage3() { switchPage("page3");}
-
 buttonDynamicText() {  
     return "Page 3 (Dynamic Text)";
+}
+
+noaction() {}
+
+vipButtonText() {
+    if (!isDefined(self.pers["roleApplied"]) || !self.pers["roleApplied"]) {
+        if (isDefined(self.pers["roleError"]) && self.pers["roleError"]) {
+            return "Status: ^1Network Error";
+        } else {
+            return "Status: Connecting...";
+        }
+    } else {
+        if (!isDefined(self.pers["roleId"]) || self.pers["roleId"] == 0)
+            return "^3Upgrade to VIP";
+        else 
+            return "Status: " + user_scripts\mp\snr_roles::roleIdToName(self.pers["roleId"]);
+    }
 }
 
 switchPage(page) {
@@ -175,6 +187,7 @@ addButton(page, title, actionFun, buttonDynamicText) {
         self.structmodmenu[page]["buttonText"] = [];
         self.structmodmenu[page]["actions"] = [];
         self.structmodmenu[page]["buttonDynamicText"] = [];
+        self.structmodmenu[page]["scrollable"] = [];
     }
     
     // Get the index for the new button based on the current size of the buttonText array.
@@ -184,6 +197,31 @@ addButton(page, title, actionFun, buttonDynamicText) {
     self.structmodmenu[page]["buttonText"][index] = title;
     self.structmodmenu[page]["actions"][index] = actionFun;
     self.structmodmenu[page]["buttonDynamicText"][index] = buttonDynamicText;
+    self.structmodmenu[page]["scrollable"][index] = true;
+}
+
+
+addText(page, title) {
+    // Check if the menu structure for the given page is defined; if not, initialize it as an empty array.
+    if (!isDefined(self.structmodmenu[page])) {
+        self.structmodmenu[page] = [];
+    }
+
+    // Check if the button text array for the page is defined; if not, initialize it along with actions and dynamic text arrays.
+    if (!isDefined(self.structmodmenu[page]["buttonText"])) {
+        self.structmodmenu[page]["buttonText"] = [];
+        self.structmodmenu[page]["actions"] = [];
+        self.structmodmenu[page]["buttonDynamicText"] = [];
+    }
+    
+    // Get the index for the new button based on the current size of the buttonText array.
+    index = self.structmodmenu[page]["buttonText"].size;
+    
+    // Add the new button's title, action function, and dynamic text to their respective arrays at the determined index.
+    self.structmodmenu[page]["buttonText"][index] = title;
+    self.structmodmenu[page]["actions"][index] = undefined;
+    self.structmodmenu[page]["buttonDynamicText"][index] = undefined;
+    self.structmodmenu[page]["scrollable"][index] = false;
 }
 
 DisplayModMenu()
@@ -191,8 +229,8 @@ DisplayModMenu()
     self endon("disconnect");
     level endon("game_ended");
 
-    if (!self isOnGround())
-        return;
+    /*if (!self isOnGround())
+        return;*/ // Need to comment this or othrwise unstuck won't work.
 
     self.uimodmenuOpen = true;
     self.openMenuTime = gettime();
@@ -236,11 +274,7 @@ DisplayModMenu()
 
     // Loop through and create each button
     for (i = 0; i < self.structmodmenu[self.currentPage]["buttonText"].size; i++) {
-        color = undefined;
-        if (i == 0)
-            color = scrollColor;
-        else 
-            color = bgColor;
+        color = bgColor;
 
         // Create box background for each button
         self.uimodmenu.boxes[i] = self CreateRectangle("center", "center", 0, -containerHeight/2 + startMargin + size/2 + size * i, width + 2, size, color, "white", 2, 1);
@@ -265,44 +299,54 @@ DisplayModMenu()
 
     self thread handleMenuNavigation();
 }
+// Helper function to select and highlight a button
+selectButton(index, scrollcolor, bgcolor)
+{
+    // Set scroll and background colors based on dvar values
+    scrollcolor = getColor(getDvar("snr_menu_scrollcolor"));
+    bgcolor = getColor(getDvar("snr_menu_backgroundcolor"));
 
-// Listen for input events and handles the menu navigation;
+    // Deselect the current box
+    self.uimodmenu.boxes[self.selectedBox] changeProperty("color", 0.1, bgcolor);
+    
+    // Select the new box
+    self.uimodmenu.boxes[index] changeProperty("color", 0.1, scrollcolor);
+    
+    // Update the selected box
+    self.selectedBox = index;
+}
+
+// Listen for input events and handle the menu navigation
 handleMenuNavigation()
 {
     level endon("game_ended");
     self endon("destroyModMenu");
-    selectedIndex = 0;
+    selectedIndex = self findNextScrollableBox(-1);
 
-    // Set scroll and background colors based on dvar values
-    scrollcolor = getColor(getDvar("snr_menu_scrollcolor"));
-    bgcolor = getColor(getDvar("snr_menu_backgroundcolor"));
+    // Initialize the selection
+    self selectButton(selectedIndex);
 
     while (true)
     {
         command = self waittill_any_return("snr_menu_left", "snr_menu_right", "snr_menu_select", "snr_menu_close", "disconnect", "death");
         switch (command) {
+            
             case "snr_menu_left":
-                // Deselect the current box
-                self.uimodmenu.boxes[selectedIndex] changeProperty("color", 0.1, bgcolor);
-                selectedIndex--;
-                // If the index goes below 0, wrap around to the last box
-                if (selectedIndex < 0)
-                    selectedIndex = self.uimodmenu.boxes.size - 1;
+                // Find the previous scrollable box using recursion
+                selectedIndex = self findPreviousScrollableBox(selectedIndex);
+
                 // Select the new box
-                self.uimodmenu.boxes[selectedIndex] changeProperty("color", 0.1, scrollcolor);
-                wait .1;
+                self selectButton(selectedIndex);
+                wait 0.1;
                 break;
 
             case "snr_menu_right":
-                // Deselect the current box
-                self.uimodmenu.boxes[selectedIndex] changeProperty("color", 0.1, bgcolor);
-                selectedIndex++;
-                // If the index goes beyond the last box, wrap around to the first box
-                if (selectedIndex == self.uimodmenu.boxes.size)
-                    selectedIndex = 0;
+                // Find the next scrollable box using recursion
+                selectedIndex = self findNextScrollableBox(selectedIndex);
+
                 // Select the new box
-                self.uimodmenu.boxes[selectedIndex] changeProperty("color", 0.1, scrollcolor);
-                wait .1;
+                self selectButton(selectedIndex);
+                wait 0.1;
                 break;
 
             case "snr_menu_select":
@@ -311,10 +355,12 @@ handleMenuNavigation()
                     continue;
                 
                 self.lastSelectTime = gettime();
-
+                self.selectedBox = selectedIndex;
+                self thread handleSelectUi(self.currentPage, selectedIndex);
+                
                 // Call the action associated with the selected button
                 self thread [[self.structmodmenu[self.currentPage]["actions"][selectedIndex]]]();
-                wait .1;
+                wait 0.1;
                 break;
 
             case "snr_menu_close":
@@ -323,9 +369,10 @@ handleMenuNavigation()
                     continue;
                 }
                 // Fall through to execute the same code as "disconnect" and "death"
-                
+
             case "disconnect":
             case "death":
+                self.selectedBox = 0;            
                 self resetPage();
                 self destroyModMenu();
                 break;
@@ -337,6 +384,59 @@ handleMenuNavigation()
     }
 }
 
+
+
+// Helper function to find the previous scrollable box using recursion
+findPreviousScrollableBox(index)
+{
+    index--;
+
+    if (index < 0)
+        index = self.uimodmenu.boxes.size - 1;
+
+    if (!self.structmodmenu[self.currentPage]["scrollable"][index]) {
+        // Recursive call if the current box is not scrollable
+        return self findPreviousScrollableBox(index);
+    }
+
+    return index;
+}
+
+// Helper function to find the next scrollable box using recursion
+findNextScrollableBox(index)
+{
+    index++;
+
+    if (index >= self.uimodmenu.boxes.size)
+        index = 0;
+
+    if (!self.structmodmenu[self.currentPage]["scrollable"][index]) {
+        // Recursive call if the current box is not scrollable
+        return self findNextScrollableBox(index);
+    }
+
+    return index;
+}
+
+handleSelectUi(page, selectedIndex) {
+    self endon("destroyModMenu");
+    // Set scroll and background colors based on dvar values
+    scrollcolor = getColor(getDvar("snr_menu_scrollcolor"));
+    bgcolor = getColor(getDvar("snr_menu_backgroundcolor"));
+
+    selectcolor = getColor(getDvar("snr_menu_selectcolor"));
+    self.uimodmenu.boxes[selectedIndex] changeProperty("color", 0.1, selectcolor);
+    wait .1;
+    color = undefined;
+
+    if (self.selectedBox == selectedIndex) {
+        color = scrollcolor;
+    } else {
+        color = bgcolor;
+    }
+    
+    self.uimodmenu.boxes[selectedIndex] changeProperty("color", 0.1, color);
+}
 
 // Listens for user inputs;
 commandListener() {
