@@ -136,21 +136,6 @@ buttonDynamicText() {
 
 noaction() {}
 
-vipButtonText() {
-    if (!isDefined(self.pers["roleApplied"]) || !self.pers["roleApplied"]) {
-        if (isDefined(self.pers["roleError"]) && self.pers["roleError"]) {
-            return "Status: ^1Network Error";
-        } else {
-            return "Status: Connecting...";
-        }
-    } else {
-        if (!isDefined(self.pers["roleId"]) || self.pers["roleId"] == 0)
-            return "^3Upgrade to VIP";
-        else 
-            return "Status: " + user_scripts\mp\snr_roles::roleIdToName(self.pers["roleId"]);
-    }
-}
-
 switchPage(page) {
     self.currentPage = page;
     if ((isDefined(self.uimodmenuOpen) && self.uimodmenuOpen)) {
